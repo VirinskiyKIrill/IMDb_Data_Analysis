@@ -10,6 +10,7 @@ void printHeader(int total, int page, int totalPages);
 void printMovieList(const vector<MovieShort>& movies, int startIdx);
 void printMovieDetails(const MovieDetails& m);
 void printActorDetails(const ActorDetails& a);
+bool updateData();
 
 int main()
 {
@@ -22,16 +23,40 @@ int main()
     const int maxPage = 20;
 
     while (true) {
-        // Поиск
-        cout << "\nEnter movie title (or 'exit'): ";
+        cout << "\nDo you wanna update data?(Y/N): ";
         string input;
+        getline(cin, input);
+
+        if (input == "Y" || input == "y") {
+            if (!updateData()) {
+                cout << "Update failed!" << endl;
+            }
+            break;
+        }
+        else if (input.empty()) {
+            continue;
+        }
+
+        cout << "\nEnter movie title (or 'exit'): ";
         getline(cin, input);
 
         if (input == "exit" || input == "quit") break;
         if (input.empty()) continue;
 
+        cout << "Enter year filter (0 = no filter): ";
+        string yearInput;
+        getline(cin, yearInput);
+
+        int yearFilter = 0;
+        try {
+            yearFilter = stoi(yearInput);
+        }
+        catch (...) {
+            yearFilter = 0;
+        }
+
         cout << "Searching..." << endl;
-        auto allResults = searchAllMovies(input);
+        auto allResults = searchAllMovies(input, yearFilter);
 
         if (allResults.empty()) {
             cout << "Nothing found." << endl;
@@ -42,10 +67,9 @@ int main()
         int totalPages = (total + maxPage - 1) / maxPage;
         int currentPage = 0;
 
-        bool needRedraw = true;  // Флаг: нужно ли перерисовать список
+        bool needRedraw = true;
 
         while (true) {
-            // Рисуем только если нужно
             if (needRedraw) {
                 auto pageMovies = getPage(allResults, currentPage, maxPage);
 
@@ -60,21 +84,21 @@ int main()
                 cout << "[1-" << pageMovies.size() << "] Select  [q] New search" << endl;
                 cout << "Your choice: ";
 
-                needRedraw = false;  // Сбрасываем флаг
+                needRedraw = false;
             }
 
             string choice;
             getline(cin, choice);
 
             if (choice.empty()) {
-                needRedraw = true;  // Перерисуем, если Enter нажали
+                needRedraw = true;
                 continue;
             }
 
             if (choice == "p" || choice == "P") {
                 if (currentPage > 0) {
                     currentPage--;
-                    needRedraw = true;  // Переход на другую страницу — нужно перерисовать
+                    needRedraw = true;
                 }
                 continue;
             }
@@ -86,10 +110,9 @@ int main()
                 continue;
             }
             if (choice == "q" || choice == "Q") {
-                break;  // Новый поиск
+                break;
             }
 
-            // Выбор фильма
             int filmNum;
             try { filmNum = stoi(choice); }
             catch (...) {
@@ -105,11 +128,9 @@ int main()
                 continue;
             }
 
-            // Детали фильма
             cout << "\nLoading details..." << endl;
             auto details = getMovieDetails(allResults[globalIdx].tconst);
 
-            // Выбор актеров
             while (true) {
                 printMovieDetails(details);
 
@@ -134,7 +155,6 @@ int main()
                     continue;
                 }
 
-                // Детали актера
                 cout << "\nLoading actor info..." << endl;
                 auto actorDetails = getActorDetails(details.cast[actorNum - 1].nconst);
                 printActorDetails(actorDetails);
@@ -143,7 +163,6 @@ int main()
                 cin.get();
             }
 
-            // После возврата из деталей — перерисуем список
             needRedraw = true;
         }
     }
@@ -246,4 +265,23 @@ void printActorDetails(const ActorDetails& a)
     }
 
     cout << "+==========================================+" << endl;
+}
+
+bool updateData()
+{
+    downloadFiles();
+
+    cout << "\n=== Unpacking files ===" << endl;
+
+    for (const auto& file : imdbFiles) {
+        if (unpackGz(file.gzPath.c_str(), file.tsvPath.c_str())) {
+            cout << "Unpacked: " << file.gzPath << "\n";
+        }
+        else {
+            cout << "Failed: " << file.gzPath << "\n";
+            return false;
+        }
+    }
+    prepareAllSortedFiles();
+    return true;
 }

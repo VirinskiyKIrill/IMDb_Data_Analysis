@@ -3,6 +3,23 @@
 #include <vector>
 using namespace std;
 
+struct ImdbFile {
+    string gzPath;
+    string tsvPath;
+    string sortedPath;
+    string baseName;
+    string url;
+};
+
+struct SortableLine {
+    string line;
+    string key;
+
+    bool operator<(const SortableLine& other) const {
+        return key < other.key;
+    }
+};
+
 struct RawPrincipal {
     string nconst;
     string category;
@@ -19,7 +36,7 @@ struct MovieShort {
 
 struct ActorShort {
     string nconst;
-    string displayName;  // Имя + роль для списка
+    string displayName;
 };
 
 struct ActorDetails {
@@ -28,8 +45,8 @@ struct ActorDetails {
     int birthYear = -1;
     int deathYear = -1;
     vector<string> professions;
-    vector<string> knownForTitles;  // tconst фильмов
-    vector<string> knownForNames;   // Названия фильмов (подгружаем отдельно)
+    vector<string> knownForTitles;
+    vector<string> knownForNames;
 };
 
 struct MovieDetails {
@@ -43,6 +60,6 @@ struct MovieDetails {
     vector<string> genres;
     float averageRating = -1;
     int numVotes = -1;
-    vector<ActorShort> cast;  // Все участники с nconst для перехода
+    vector<ActorShort> cast;
     vector<string> directors;
 };
